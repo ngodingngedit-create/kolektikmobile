@@ -6,8 +6,8 @@ const currentView = ref('login'); // 'login' or 'register'
 const registerStep = ref(1); // 1, 2, or 3
 
 // Form inputs
-const email = ref('');
-const password = ref('');
+const email = ref('maspamcompany@kolektix.id');
+const password = ref('password123');
 const showPassword = ref(false);
 
 // Register Step 1 inputs
