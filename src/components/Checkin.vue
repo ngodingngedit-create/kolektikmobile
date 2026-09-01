@@ -660,7 +660,8 @@ const handleDragEnd = () => {
           <!-- Tickets List Table (Scrollable X) -->
           <div class="table-container-wrapper">
             <div v-if="isLoading" class="loading-state">
-              Memuat data tiket...
+              <div class="custom-spinner"></div>
+              <span>Memuat data tiket...</span>
             </div>
             <div v-else-if="filteredTickets.length === 0" class="empty-tickets">
               <p class="empty-label">Tidak ada tiket ditemukan</p>
@@ -1421,6 +1422,32 @@ const handleDragEnd = () => {
   border: 1px solid #e2e8f0;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.custom-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #194E9E;
+  border-radius: 50%;
+  animation: spin-rotate 0.75s linear infinite;
+}
+
+@keyframes spin-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .table-scroll-x {
