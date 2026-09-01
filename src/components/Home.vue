@@ -16,6 +16,61 @@ const selectedEvent = ref(null);
 const checkinInitialTab = ref('aktif');
 const checkinInitialEvent = ref(null);
 
+// Placeholder typing animation logic
+const placeholders = ['Cari event musik...', 'Cari tiket pameran...', 'Cari kreator favorit...', 'Cari The Script...'];
+const currentPlaceholder = ref('Cari event...');
+let textIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+
+const typePlaceholder = () => {
+  const currentText = placeholders[textIndex];
+  
+  if (isDeleting) {
+    currentPlaceholder.value = currentText.substring(0, charIndex - 1);
+    charIndex--;
+  } else {
+    currentPlaceholder.value = currentText.substring(0, charIndex + 1);
+    charIndex++;
+  }
+
+  let typeSpeed = isDeleting ? 30 : 80;
+
+  if (!isDeleting && charIndex === currentText.length) {
+    typeSpeed = 2500; // Pause at the end before deleting
+    isDeleting = true;
+  } else if (isDeleting && charIndex === 0) {
+    isDeleting = false;
+    textIndex = (textIndex + 1) % placeholders.length;
+    typeSpeed = 500; // Pause before typing the next phrase
+  }
+
+  setTimeout(typePlaceholder, typeSpeed);
+};
+
+onMounted(() => {
+  setTimeout(typePlaceholder, 1000);
+});
+
+const isScrolledDown = ref(false);
+const isScrolledFromTop = ref(false);
+let lastScrollTop = 0;
+
+const handleScroll = (e) => {
+  const st = e.target.scrollTop;
+  
+  isScrolledFromTop.value = st > 10;
+
+  if (st > lastScrollTop && st > 20) {
+    // scrolling down
+    isScrolledDown.value = true;
+  } else if (st < lastScrollTop) {
+    // scrolling up
+    isScrolledDown.value = false;
+  }
+  lastScrollTop = st <= 0 ? 0 : st;
+};
+
 const handleSwitchTab = (tab, initialTab = 'aktif', initialEvent = null) => {
   activeTab.value = tab;
   checkinInitialTab.value = initialTab;
@@ -51,11 +106,73 @@ watch(activeTab, () => {
   }
 });
 
+const currentSliderIndex = ref(0);
+let sliderInterval;
+
+const startSliderInterval = () => {
+  if (sliderInterval) clearInterval(sliderInterval);
+  sliderInterval = setInterval(() => {
+    if (events.value.length > 0) {
+      currentSliderIndex.value = (currentSliderIndex.value + 1) % events.value.length;
+    }
+  }, 3500);
+};
+
 const sadAnimation = ref(null);
 onMounted(async () => {
   const res = await fetch('/media/sad emotion.json');
   sadAnimation.value = await res.json();
+  startSliderInterval();
 });
+
+onUnmounted(() => {
+  if (sliderInterval) clearInterval(sliderInterval);
+});
+
+// Drag / Swipe Logic for Slider
+const startX = ref(0);
+const currentTranslate = ref(0);
+const prevTranslate = ref(0);
+const isDragging = ref(false);
+
+const handleDragStart = (x) => {
+  isDragging.value = true;
+  startX.value = x;
+  if (sliderInterval) clearInterval(sliderInterval);
+};
+
+const handleDragMove = (x) => {
+  if (!isDragging.value) return;
+  const currentPosition = x;
+  const diff = currentPosition - startX.value;
+  currentTranslate.value = prevTranslate.value + diff;
+};
+
+const handleDragEnd = () => {
+  if (!isDragging.value) return;
+  isDragging.value = false;
+  const movedBy = currentTranslate.value - prevTranslate.value;
+
+  if (movedBy < -50 && currentSliderIndex.value < events.value.length - 1) {
+    currentSliderIndex.value += 1;
+  } else if (movedBy > 50 && currentSliderIndex.value > 0) {
+    currentSliderIndex.value -= 1;
+  }
+
+  // Snap back
+  currentTranslate.value = 0;
+  prevTranslate.value = 0;
+  
+  startSliderInterval();
+};
+
+const handleTouchStart = (e) => handleDragStart(e.touches[0].clientX);
+const handleTouchMove = (e) => handleDragMove(e.touches[0].clientX);
+const handleTouchEnd = () => handleDragEnd();
+
+const handleMouseDown = (e) => handleDragStart(e.clientX);
+const handleMouseMove = (e) => handleDragMove(e.clientX);
+const handleMouseUp = () => handleDragEnd();
 
 const isSidebarOpen = ref(false);
 const isSaldoOpen = ref(true);
@@ -151,7 +268,11 @@ const handleTarikSaldo = () => {
 <template>
   <div class="mobile-wrapper">
     <!-- Top Nav Bar -->
-    <header class="navbar-header" :class="{ 'hidden-header': activeTab === 'create-event' || activeTab === 'event-detail' }">
+    <header class="navbar-header" :class="{ 
+      'hidden-header': activeTab === 'create-event' || activeTab === 'event-detail',
+      'navbar-home': activeTab === 'home',
+      'navbar-scrolled': isScrolledFromTop 
+    }">
       <div class="nav-left-group">
         <button class="nav-menu-btn" @click="isSidebarOpen = true">
           <!-- Hamburger Menu -->
@@ -160,8 +281,12 @@ const handleTarikSaldo = () => {
           </svg>
         </button>
         
-        <div class="navbar-logo-container">
-          <img src="/media/logo.png" alt="Kolektix Logo" class="nav-logo" />
+        <div class="header-search-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#194e9e" stroke-width="2.5" class="search-icon">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" :placeholder="currentPlaceholder" class="search-input" />
         </div>
       </div>
 
@@ -176,7 +301,7 @@ const handleTarikSaldo = () => {
     </header>
 
     <!-- Main Scrollable Content Area -->
-    <main class="content-scroll-area" :class="{ 'checkin-list-bg': activeTab === 'Checkin', 'dashboard-no-padding': activeTab === 'Dashboard' || activeTab === 'event' || activeTab === 'create-event' || activeTab === 'event-detail' }">
+    <main class="content-scroll-area" @scroll="handleScroll" :class="{ 'checkin-list-bg': activeTab === 'Checkin', 'dashboard-no-padding': activeTab === 'Dashboard' || activeTab === 'event' || activeTab === 'create-event' || activeTab === 'event-detail' }">
       <!-- Dashboard tab content template -->
       <template v-if="activeTab === 'Dashboard'">
         <Dashboard :events="events" />
@@ -184,47 +309,66 @@ const handleTarikSaldo = () => {
 
       <!-- Home tab content template -->
       <template v-if="activeTab === 'home'">
-        <!-- Blue Header Wrapper -->
-        <div class="header-blue-bg">
-          <!-- Sales & Payout Summary Card -->
-          <section class="summary-card">
-            <span class="summary-title">Total Penjualan</span>
-            <h2 class="summary-amount">Rp 48.500.000</h2>
-            
-            <div class="summary-badges">
-              <div class="summary-badge">
-                <span class="badge-dot green-dot"></span>
-                <span class="badge-text">3 Event Aktif</span>
-              </div>
-              <div class="summary-badge">
-                <!-- Ticket Icon SVG -->
-                <svg viewBox="0 0 24 24" fill="currentColor" class="badge-icon-ticket">
-                  <path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4zm-9 7.5h-2v-2h2v2zm0-4.5h-2v-2h2v2zm0-4.5h-2v-2h2v2z"/>
-                </svg>
-                <span class="badge-text">1.420 Tiket Terjual</span>
-              </div>
+        <!-- Event Image Slider (Moved to top) -->
+        <div class="slider-container">
+          <div 
+            class="slider-track" 
+            :style="{ 
+              transform: `translateX(calc(-${currentSliderIndex * 100}% + ${currentTranslate}px))`,
+              transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)' 
+            }"
+            @touchstart="handleTouchStart"
+            @touchmove="handleTouchMove"
+            @touchend="handleTouchEnd"
+            @mousedown="handleMouseDown"
+            @mousemove="handleMouseMove"
+            @mouseup="handleMouseUp"
+            @mouseleave="handleMouseUp"
+          >
+            <div v-for="event in events" :key="event.id" class="slide">
+              <img :src="event.image" :alt="event.title" class="slide-image" draggable="false" />
             </div>
-            
-            <div class="summary-divider"></div>
-            
-            <div class="payout-row">
-              <div class="payout-info">
-                <span class="payout-label">Saldo Payout</span>
-                <span class="payout-amount">Rp 12.400.000</span>
-              </div>
-              <button class="payout-btn" @click="handleTarikSaldo">
-                <span>Tarik Saldo</span>
-                <!-- Arrow Right Icon -->
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="arrow-icon">
-                  <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-            </div>
-          </section>
+          </div>
+          <div class="slider-dots">
+            <span 
+              v-for="(event, index) in events" 
+              :key="event.id" 
+              class="slider-dot" 
+              :class="{ active: currentSliderIndex === index }"
+              @click="currentSliderIndex = index"
+            ></span>
+          </div>
         </div>
 
         <!-- White Container for Event Cards with custom rounded transition -->
         <div class="events-container">
+          <!-- K-Wallet Header Section (Moved inside white container) -->
+          <div class="k-wallet-section">
+            <div class="k-wallet-left">
+              <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80" alt="Creator" class="k-creator-avatar" />
+              <div class="k-wallet-info">
+                <span class="k-wallet-label">Uang Hasil Penjualan</span>
+                <h2 class="k-wallet-amount">Rp 99.000</h2>
+                <!-- <span class="k-wallet-coin">Kolektif coin 10.000</span> -->
+              </div>
+            </div>
+            
+            <div class="k-wallet-actions">
+              <button class="tarik-saldo-btn" @click="handleTarikSaldo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tarik-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="top-events-header">
+            <h2 class="top-events-title">Events</h2>
+            <!--  -->
+          </div>
+
           <!-- Event Cards List -->
           <section class="cards-list-section">
             <div 
@@ -317,12 +461,19 @@ const handleTarikSaldo = () => {
           <Vue3Lottie v-if="sadAnimation" :animationData="sadAnimation" :height="180" :width="180" />
           <h3 class="merch-empty-title">Belum Ada Merchandise</h3>
           <p class="merch-empty-desc">Fitur merchandise sedang dalam pengembangan</p>
+          <button class="add-merch-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="add-merch-icon">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Tambah Merch
+          </button>
         </div>
       </template>
     </main>
 
     <!-- Bottom Tab Navigation Bar -->
-    <nav class="bottom-nav" :class="{ 'hidden-nav': activeTab === 'create-event' || activeTab === 'event-detail' }">
+    <nav class="bottom-nav" :class="{ 'hidden-nav': activeTab === 'create-event' || activeTab === 'event-detail', 'nav-scrolled': isScrolledDown }">
       <button class="nav-tab home-tab" :class="{ active: activeTab === 'home' }" @click="activeTab = 'home'">
         <!-- Custom Logo Image -->
         <img 
@@ -546,7 +697,6 @@ const handleTarikSaldo = () => {
   }
 }
 
-/* Navbar styles */
 .navbar-header {
   background-color: var(--primary-base);
   height: 56px;
@@ -555,9 +705,25 @@ const handleTarikSaldo = () => {
   justify-content: space-between;
   padding: 0 16px;
   flex-shrink: 0;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
   transform: translateY(0);
   opacity: 1;
+}
+
+/* Home specific navbar styles for smooth transition */
+.navbar-header.navbar-home {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.navbar-header.navbar-home.navbar-scrolled {
+  background-color: var(--primary-base);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-header.hidden-header {
@@ -569,6 +735,12 @@ const handleTarikSaldo = () => {
   overflow: hidden;
   border: none;
   pointer-events: none;
+}
+
+.nav-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .nav-menu-btn, .nav-profile-container {
@@ -587,10 +759,44 @@ const handleTarikSaldo = () => {
   height: 24px;
 }
 
-.navbar-logo-container {
+.header-search-pill {
   display: flex;
   align-items: center;
-  justify-content: center;
+  background-color: var(--white);
+  border-radius: 20px;
+  padding: 0 12px;
+  flex: 1;
+  margin-right: 12px;
+  height: 32px;
+}
+
+.search-icon {
+  width: 13px;
+  height: 13px;
+  margin-right: 8px;
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 11px;
+  color: var(--dark);
+  flex: 1;
+  width: 100%;
+}
+
+
+.sign-in-btn {
+  background-color: var(--white);
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .nav-logo {
@@ -619,10 +825,9 @@ const handleTarikSaldo = () => {
 .content-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 24px 16px 84px 16px; /* extra bottom padding */
+  padding: 0 0 84px 0; /* Remove top/side padding to allow full-width banner */
   display: flex;
   flex-direction: column;
-  gap: 24px;
   scrollbar-width: none;
 }
 
@@ -630,163 +835,174 @@ const handleTarikSaldo = () => {
   display: none;
 }
 
-.content-scroll-area.dashboard-no-padding {
-  padding: 0;
-}
-
-/* Blue Header Container */
-.header-blue-bg {
-  background-color: var(--primary-base);
-  padding: 20px 16px 0 16px; /* shortened bottom edge to 0, adjusted top */
-  margin: -24px -16px 0 -16px;
-  position: relative;
-  z-index: 3; /* higher z-index so it stays on top of events-container, showing summary-card shadow */
-  border-bottom-left-radius: 24px;
-  border-bottom-right-radius: 24px;
-}
-
-/* Summary Card styles */
-.summary-card {
-  background-color: var(--white);
-  border: 1px solid var(--light-grey);
-  border-radius: 12px; /* standardized rounded corners */
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 16px -6px rgba(0, 0, 0, 0.04); /* neat thin shadow matching border */
-  margin-top: 12px;
-  margin-bottom: -32px; /* overlap blue area */
-  position: relative;
-  z-index: 3;
-}
-
-.summary-title {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--dark-grey);
-  text-transform: none; /* Not all uppercase */
-}
-
-.summary-amount {
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--dark);
-  margin-top: 4px;
-  margin-bottom: 14px;
-  font-family: var(--font-sans);
-}
-
-.summary-badges {
-  display: flex;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  gap: 8px;
-  margin-bottom: 16px;
-  scrollbar-width: none; /* Hide scrollbar Firefox */
-  -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
-}
-
-.summary-badges::-webkit-scrollbar {
-  display: none; /* Hide scrollbar Chrome/Safari */
-}
-
-.summary-badge {
-  background: none; /* Remove background */
-  border: 1px solid var(--light-grey); /* Keep thin border */
-  padding: 5px 12px;
-  border-radius: 12px; /* standardized rounded corners */
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0; /* Prevent badges from squishing */
-}
-
-.summary-badge .badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.summary-badge .green-dot {
-  background-color: #16a34a;
-}
-
-.badge-icon-ticket {
-  width: 14px;
-  height: 14px;
-  color: var(--primary-base);
-}
-
-.badge-text {
-  font-size: 11px;
-  font-weight: 400; /* Not bold */
-  color: var(--dark); /* Black color text */
-  text-transform: none; /* Not all uppercase */
-}
-
-.summary-divider {
-  height: 1px;
-  background-color: var(--light-grey);
-  margin-bottom: 14px;
-}
-
-.payout-row {
+/* K-Wallet Header Styles (Now inside events container) */
+.k-wallet-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #194e9e;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(25, 78, 158, 0.1);
+  margin-bottom: 24px;
 }
 
-.payout-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.payout-label {
-  font-size: 11px;
-  color: var(--dark); /* Black text color */
-  font-weight: 500; /* Not too thin, not too bold */
-  text-transform: none;
-}
-
-.payout-amount {
-  font-size: 16px;
-  font-weight: 600; /* Balanced semi-bold text, not too thin or bold */
-  color: var(--dark); /* Black color payout amount */
-}
-
-.payout-btn {
-  background-color: var(--primary-base); /* Blue color button */
-  color: var(--white);
-  border: none;
-  border-radius: 12px; /* standardized rounded corners */
-  padding: 6px 12px; /* Smaller button size */
-  font-size: 11px; /* Smaller button font size */
-  font-weight: 600;
+.k-wallet-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.k-creator-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.k-wallet-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.k-wallet-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 400;
+}
+
+.k-wallet-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--white);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.k-wallet-coin {
+  font-size: 9px;
+  color: #8bb4e7;
+  font-weight: 500;
+}
+
+.k-wallet-actions {
+  display: flex;
+  align-items: center;
+}
+
+.tarik-saldo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--white);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
-.payout-btn:hover {
-  background-color: var(--primary-light-700);
-  opacity: 0.95;
+.tarik-saldo-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
-.arrow-icon {
-  width: 12px;
-  height: 12px;
+.tarik-icon {
+  width: 16px;
+  height: 16px;
 }
 
-/* White background container wrapping event list styled as full screen section */
+/* Image Slider Styles */
+.slider-container {
+  position: relative;
+  width: 100%; /* Banner full width */
+  height: 316px; /* Taller banner to cover behind header */
+  min-height: 316px;
+  overflow: hidden;
+  display: block;
+  flex-shrink: 0;
+}
+
+.slider-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.slider-dots {
+  position: absolute;
+  bottom: 76px; /* moved up higher so it sits above the overlapping white container */
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+/* White Container Overlapping Slider */
 .events-container {
   background-color: var(--white);
-  border-top-left-radius: 16px; /* rounded top left corner matching mockup */
-  border-top-right-radius: 16px; /* rounded top right corner matching mockup */
-  padding: 96px 16px 84px 16px; /* increased top padding to shift event cards slightly lower down */
-  margin: -64px -16px 0 -16px; /* pulled higher up to make the blue background bottom side shorter */
+  border-radius: 16px 16px 0 0;
+  margin-top: -64px; /* overlap the slider more aggressively */
+  padding: 24px 16px;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.top-events-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.top-events-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark);
+  margin: 0;
+}
+
+.arrow-right-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.slider-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.slider-dot.active {
+  width: 16px;
+  background-color: white;
+}
+
+/* White Container for Event Cards */
+.events-container {
+  background-color: var(--white);
   position: relative;
   z-index: 2;
 }
@@ -794,24 +1010,33 @@ const handleTarikSaldo = () => {
 /* Event Cards */
 .cards-list-section {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 16px;
+  padding-bottom: 16px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.cards-list-section::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
 }
 
 .event-card {
   background-color: var(--white);
   border: 1px solid var(--light-grey);
-  border-radius: 12px; /* standardized rounded corners */
+  border-radius: 8px; /* reduced rounded corners */
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  flex: 0 0 85%; /* Widened again */
 }
 
 .card-thumbnail-wrapper {
   position: relative;
   width: 100%;
-  height: 160px;
+  height: 130px; /* Reduced height */
   background-color: var(--light-grey);
 }
 
@@ -872,10 +1097,10 @@ const handleTarikSaldo = () => {
 }
 
 .card-info {
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .event-card-title {
@@ -1011,31 +1236,37 @@ const handleTarikSaldo = () => {
 /* Bottom Nav styles */
 .bottom-nav {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 68px;
-  background-color: var(--white);
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  bottom: 24px;
+  left: 20px;
+  right: 20px;
+  height: 64px;
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 8px;
+  padding: 0 12px;
   z-index: 10;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08), 0 -2px 10px rgba(0, 0, 0, 0.04); /* stronger visible shadow */
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
-  transform: translateY(0);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  transform: translateY(0) scale(1);
+  transform-origin: center bottom;
   opacity: 1;
 }
 
+.bottom-nav.nav-scrolled {
+  transform: scale(0.85); /* Removed translateY to keep it higher */
+  height: 56px;
+  border-radius: 28px;
+  bottom: 24px; /* Kept at same height as normal nav */
+}
+
 .bottom-nav.hidden-nav {
-  transform: translateY(100%);
+  transform: translateY(100px);
   opacity: 0;
-  height: 0;
-  padding: 0;
-  overflow: hidden;
-  border: none;
   pointer-events: none;
 }
 
@@ -1050,7 +1281,7 @@ const handleTarikSaldo = () => {
   color: var(--grey);
   cursor: pointer;
   padding: 4px 4px; /* adjusted padding to keep balance */
-  transition: color 0.2s;
+  transition: color 0.2s, transform 0.2s;
   flex: 1;
   height: 100%;
   position: relative;
@@ -1059,6 +1290,7 @@ const handleTarikSaldo = () => {
 
 .nav-tab:hover {
   color: var(--dark-grey);
+  transform: translateY(-2px);
 }
 
 .tab-icon {
@@ -1067,9 +1299,14 @@ const handleTarikSaldo = () => {
 }
 
 .tab-icon-image {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
+  transition: transform 0.2s;
+}
+
+.nav-tab.active .tab-icon-image {
+  transform: scale(1.05);
 }
 
 .tab-label {
@@ -1078,13 +1315,13 @@ const handleTarikSaldo = () => {
 }
 
 .home-label {
-  margin-top: -6px; /* pull Home label up to align with smaller icons */
+  margin-top: -4px; /* pull Home label up to align with smaller icons */
 }
 
 /* Shift entire Home tab contents up slightly */
 .home-tab .tab-icon-image,
 .home-tab .home-label {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 /* Active tab style with top indicator line and blue text */
@@ -1094,15 +1331,7 @@ const handleTarikSaldo = () => {
 }
 
 .nav-tab.active::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 44px;
-  height: 3px;
-  background-color: var(--primary-base);
-  border-radius: 0 0 4px 4px;
+  display: none;
 }
 
 /* ==========================================
@@ -2598,12 +2827,11 @@ const handleTarikSaldo = () => {
   display: flex;
   flex-direction: column;
 }
-.sidebar-nav-item.parent {
-  justify-content: space-between;
-}
+
 .group-chevron {
   width: 16px;
   height: 16px;
+  margin-left: auto;
   transition: transform 0.2s;
 }
 .group-chevron.rotated {
@@ -2679,4 +2907,31 @@ const handleTarikSaldo = () => {
 }
 .merch-empty-desc { font-size: 13px; color: #64748b; line-height: 1.6; margin: 0; }
 
+/* Add Merch Button */
+.add-merch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--primary-base);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(25, 78, 158, 0.2);
+}
+
+.add-merch-btn:hover {
+  background-color: #154388;
+  transform: translateY(-1px);
+}
+
+.add-merch-icon {
+  width: 18px;
+  height: 18px;
+}
 </style>

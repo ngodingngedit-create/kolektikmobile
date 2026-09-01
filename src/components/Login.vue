@@ -631,4 +631,8 @@ const handleLogoUpload = (event) => {
 .terms-link:hover {
   text-decoration: underline;
 }
+
+.card-content-wrapper {
+  margin-top: 24px;
+}
 </style>

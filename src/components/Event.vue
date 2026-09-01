@@ -62,38 +62,6 @@ const handleCreateEvent = () => {
 
 <template>
   <div class="event-list-page">
-    <!-- Filter Tabs (Styled as Checkin Tabs) -->
-    <div class="event-filters-container">
-      <button 
-        class="filter-btn" 
-        :class="{ active: currentFilter === 'semua' }" 
-        @click="currentFilter = 'semua'"
-      >
-        Semua Event
-      </button>
-      <button 
-        class="filter-btn" 
-        :class="{ active: currentFilter === 'aktif' }" 
-        @click="currentFilter = 'aktif'"
-      >
-        Event Aktif
-      </button>
-      <button 
-        class="filter-btn" 
-        :class="{ active: currentFilter === 'draf' }" 
-        @click="currentFilter = 'draf'"
-      >
-        Event Draf
-      </button>
-      <button 
-        class="filter-btn" 
-        :class="{ active: currentFilter === 'lalu' }" 
-        @click="currentFilter = 'lalu'"
-      >
-        Event Lalu
-      </button>
-    </div>
-
     <!-- ======= EVENT LIST ======= -->
     <div class="event-tab-content">
       <div class="events-container-alt">

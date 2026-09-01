@@ -2150,10 +2150,9 @@ watch(ticketQty, (val) => { if (val) ticketErrors.value.qty = ''; });
 
 /* Footer Styles */
 .create-footer {
-  position: absolute;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
+  width: 100%;
   height: 60px;
   background-color: white;
   border-top: 1px solid #e2e8f0;
@@ -2162,6 +2161,7 @@ watch(ticketQty, (val) => { if (val) ticketErrors.value.qty = ''; });
   z-index: 10;
   display: flex;
   align-items: center;
+  margin-top: auto;
 }
 .footer-actions-row {
   display: flex;

@@ -47,55 +47,56 @@ const withdrawHistory = ref([
 <template>
   <div class="dashboard-wrapper">
     <!-- Active Tab Buttons (Fixed at top) -->
-    <div class="dashboard-tabs-header">
-      <button
-        class="dashboard-tab-btn"
-        :class="{ active: activeTab === 'dashboard' }"
-        @click="activeTab = 'dashboard'"
-      >
-        Dashboard
-      </button>
-      <button
-        class="dashboard-tab-btn"
-        :class="{ active: activeTab === 'withdraw' }"
-        @click="activeTab = 'withdraw'"
-      >
-        Withdraw
-      </button>
-    </div>
-
     <!-- Scrollable Content Area -->
     <div class="dashboard-scrollable-content">
-      <!-- ===== DASHBOARD TAB ===== -->
-      <template v-if="activeTab === 'dashboard'">
-        <div class="dashboard-header-card">
-          <!-- Verified pill + Date on same row -->
-          <div class="header-top-row">
-            <div class="verified-account-pill">
-              <svg viewBox="0 0 20 20" fill="currentColor" class="verified-icon-svg">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4.13-5.68Z" clip-rule="evenodd" />
-              </svg>
-              <span>Akun Terverifikasi</span>
-            </div>
-            
-            <button class="dashboard-date-btn" @click="isCalendarOpen = true">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="date-calendar-icon">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <span class="dashboard-date-label">Kamis, 27 Agu 2026</span>
-            </button>
+      
+      <!-- PERSISTENT HEADER CARD -->
+      <div class="dashboard-header-card">
+        <!-- Top Row: Greeting -->
+        <div class="header-top-row">
+          <div class="header-user-info">
+            <h1 class="dashboard-greeting-title">Halo, Maspamcompany!</h1>
           </div>
-
-          <h1 class="dashboard-greeting-title">Halo, Maspamcompany LTD</h1>
-
-          <div class="dashboard-subtitle-btn">
-            <span class="dashboard-subtitle-text">Pantau dan kelola event, lowongan, dan merchandise</span>
-          </div>
+          <!-- History Button for Withdraw Tab -->
+          <button v-if="activeTab === 'withdraw'" class="header-history-btn" @click="isHistoryOpen = !isHistoryOpen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="history-icon">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </button>
         </div>
 
+        <!-- Balance Section -->
+        <div class="dashboard-balance-section">
+          <div class="balance-label-row">
+            <span class="balance-label">{{ activeTab === 'dashboard' ? 'Saldo tersedia' : 'Total Saldo Keseluruhan' }}</span>
+          </div>
+          <h2 class="dashboard-balance-amount">{{ activeTab === 'dashboard' ? 'Rp 658.021' : 'Rp. 12,400,000' }}</h2>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="dashboard-action-buttons">
+          <button v-if="activeTab === 'dashboard'" class="withdraw-action-btn" @click="activeTab = 'withdraw'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon">
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            <span>Withdraw</span>
+          </button>
+          <button v-else class="withdraw-action-btn" @click="activeTab = 'dashboard'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== DASHBOARD TAB ===== -->
+      <template v-if="activeTab === 'dashboard'">
         <div class="rekap-section-header">
           <div class="rekap-header-left">
             <h2>Rekap Semua Event</h2>
@@ -177,19 +178,6 @@ const withdrawHistory = ref([
       <!-- ===== WITHDRAW TAB ===== -->
       <template v-else-if="activeTab === 'withdraw'">
         <div v-if="!isHistoryOpen">
-          <!-- Total Saldo Keseluruhan -->
-        <div class="withdraw-total-saldo">
-          <div class="withdraw-total-left">
-            <span class="withdraw-total-label">Total Saldo Keseluruhan</span>
-            <h2 class="withdraw-total-amount">Rp. 12,400,000</h2>
-          </div>
-          <button class="withdraw-history-btn" @click="isHistoryOpen = !isHistoryOpen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </button>
-        </div>
 
         <!-- Horizontal Scrollable Metrics -->
         <div class="withdraw-metrics-scroll-container">
@@ -376,8 +364,7 @@ const withdrawHistory = ref([
   flex-direction: column;
   background-color: transparent;
   font-family: var(--font-sans);
-  height: 100%;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 /* ===== TAB HEADERS (Matching Checkin.vue) ===== */
@@ -423,13 +410,10 @@ const withdrawHistory = ref([
 
 /* ===== SCROLLABLE CONTENT ===== */
 .dashboard-scrollable-content {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px 16px 84px 16px; /* Adjusted padding to 16px left/right */
-  scrollbar-width: none;
+  padding: 16px 16px 100px 16px;
 }
 
 .dashboard-scrollable-content::-webkit-scrollbar {
@@ -438,98 +422,159 @@ const withdrawHistory = ref([
 
 /* ===== HEADER CARD ===== */
 .dashboard-header-card {
+  background-color: #194E9E;
+  border-radius: 24px;
+  padding: 16px 20px 20px 20px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-  width: 100%;
+  color: white;
+  margin: -16px -16px 0 -16px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
-/* Verified pill + date on same row */
 .header-top-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  width: 100%;
-  margin-bottom: 2px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-.verified-account-pill {
+.header-user-info {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background-color: #f0fdf4;
-  color: #15803d;
-  font-size: 9px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 20px;
-  border: 1px solid #dcfce7;
+  gap: 10px;
 }
 
-.verified-icon-svg { width: 10px; height: 10px; }
-
-.dashboard-date-btn {
+.user-avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.dashboard-date-btn:hover {
-  background-color: #f1f5f9;
-}
-
-.date-calendar-icon {
-  width: 14px;
-  height: 14px;
-  color: #194E9E; /* Changed to Blue */
-}
-
-.dashboard-date-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #475569;
-  text-align: right;
-  flex-shrink: 0;
-  font-family: var(--font-sans);
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
 }
 
 .dashboard-greeting-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 2px 0 0 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
 }
 
-.dashboard-subtitle-btn {
+.header-notif-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+}
+.notif-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.dashboard-balance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.header-history-btn {
+  background: none;
+  border: none;
+  color: white;
+  padding: 4px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 0;
-  margin-top: 2px;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.history-icon {
+  width: 18px;
+  height: 18px;
 }
 
-.dashboard-subtitle-text {
-  font-size: 12px;
-  color: #475569;
-  text-align: left;
-  flex: 1;
-  font-family: var(--font-sans);
+.balance-label-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.balance-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.balance-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+}
+.badge-icon {
+  width: 12px;
+  height: 12px;
+  color: #10b981;
+}
+
+.dashboard-balance-amount {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+  display: flex;
+  align-items: flex-start;
+}
+.balance-cents {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-left: 2px;
+}
+
+.dashboard-action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.withdraw-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 24px;
+  border-radius: 8px;
+  width: 100%;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.withdraw-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.action-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .rekap-section-header {
