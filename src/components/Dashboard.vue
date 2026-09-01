@@ -1,14 +1,24 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
-defineProps({
+const props = defineProps({
   events: {
     type: Array,
     required: true
+  },
+  initialTab: {
+    type: String,
+    default: 'dashboard'
   }
 });
 
-const activeTab = ref('dashboard'); // 'dashboard' or 'withdraw'
+const activeTab = ref(props.initialTab || 'dashboard'); // 'dashboard' or 'withdraw'
+
+watch(() => props.initialTab, (val) => {
+  if (val) {
+    activeTab.value = val;
+  }
+});
 const isCalendarOpen = ref(false);
 const isHistoryOpen = ref(false);
 

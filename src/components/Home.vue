@@ -15,6 +15,12 @@ const selectedEvent = ref(null);
 
 const checkinInitialTab = ref('aktif');
 const checkinInitialEvent = ref(null);
+const dashboardInitialTab = ref('dashboard');
+
+const handleTarikSaldo = () => {
+  dashboardInitialTab.value = 'withdraw';
+  activeTab.value = 'Dashboard';
+};
 
 // Placeholder typing animation logic
 const placeholders = ['Cari event musik...', 'Cari tiket pameran...', 'Cari kreator favorit...', 'Cari The Script...'];
@@ -259,10 +265,6 @@ const events = ref([
     image: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=400&q=80'
   }
 ]);
-
-const handleTarikSaldo = () => {
-  alert('Penarikan saldo sedang diproses');
-};
 </script>
 
 <template>
@@ -304,7 +306,7 @@ const handleTarikSaldo = () => {
     <main class="content-scroll-area" @scroll="handleScroll" :class="{ 'checkin-list-bg': activeTab === 'Checkin', 'dashboard-no-padding': activeTab === 'Dashboard' || activeTab === 'event' || activeTab === 'create-event' || activeTab === 'event-detail' }">
       <!-- Dashboard tab content template -->
       <template v-if="activeTab === 'Dashboard'">
-        <Dashboard :events="events" />
+        <Dashboard :events="events" :initial-tab="dashboardInitialTab" />
       </template>
 
       <!-- Home tab content template -->
@@ -699,12 +701,14 @@ const handleTarikSaldo = () => {
 
 .navbar-header {
   background-color: var(--primary-base);
-  height: 56px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
   transform: translateY(0);
   opacity: 1;
@@ -723,6 +727,7 @@ const handleTarikSaldo = () => {
 
 .navbar-header.navbar-home.navbar-scrolled {
   background-color: var(--primary-base);
+  height: 64px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -741,6 +746,9 @@ const handleTarikSaldo = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  margin-right: 12px;
+  min-width: 0;
 }
 
 .nav-menu-btn, .nav-profile-container {
@@ -752,11 +760,12 @@ const handleTarikSaldo = () => {
   color: var(--white);
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .nav-icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 }
 
 .header-search-pill {
@@ -764,23 +773,26 @@ const handleTarikSaldo = () => {
   align-items: center;
   background-color: var(--white);
   border-radius: 20px;
-  padding: 0 12px;
+  padding: 0 14px;
   flex: 1;
-  margin-right: 12px;
-  height: 32px;
+  margin-right: 0;
+  height: 38px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  min-width: 0;
 }
 
 .search-icon {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .search-input {
   border: none;
   background: transparent;
   outline: none;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dark);
   flex: 1;
   width: 100%;
@@ -790,9 +802,9 @@ const handleTarikSaldo = () => {
 .sign-in-btn {
   background-color: var(--white);
   color: #ef4444;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-radius: 20px;
   border: none;
   cursor: pointer;
@@ -800,13 +812,13 @@ const handleTarikSaldo = () => {
 }
 
 .nav-logo {
-  max-height: 28px;
+  max-height: 30px;
   width: auto;
 }
 
 .profile-circle {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background-color: var(--white);
   color: var(--grey);
@@ -814,11 +826,12 @@ const handleTarikSaldo = () => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .profile-svg {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 }
 
 /* Content Scrollable area */
@@ -829,6 +842,10 @@ const handleTarikSaldo = () => {
   display: flex;
   flex-direction: column;
   scrollbar-width: none;
+}
+
+.content-scroll-area.dashboard-no-padding {
+  padding-bottom: 0 !important;
 }
 
 .content-scroll-area::-webkit-scrollbar {
@@ -1251,21 +1268,21 @@ const handleTarikSaldo = () => {
   padding: 0 12px;
   z-index: 10;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, height 0.35s ease, border-radius 0.35s ease;
   transform: translateY(0) scale(1);
   transform-origin: center bottom;
   opacity: 1;
 }
 
 .bottom-nav.nav-scrolled {
-  transform: scale(0.85); /* Removed translateY to keep it higher */
+  transform: scale(0.88);
   height: 56px;
   border-radius: 28px;
-  bottom: 24px; /* Kept at same height as normal nav */
+  bottom: 24px;
 }
 
 .bottom-nav.hidden-nav {
-  transform: translateY(100px);
+  transform: translateY(120px) scale(0.9);
   opacity: 0;
   pointer-events: none;
 }

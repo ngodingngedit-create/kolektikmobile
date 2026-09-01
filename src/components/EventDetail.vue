@@ -1264,7 +1264,7 @@ const handleChat = () => {
 
     <!-- Fixed Bottom Bar for Editing Invitation -->
     <transition name="slide-up" appear>
-      <div v-if="activeSubTab === 'Invitation' && editingInvitation" class="ticket-form-actions-bar-fixed" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 16px;">
+      <div v-if="activeSubTab === 'Invitation' && editingInvitation" class="ticket-form-actions-bar-fixed">
         <button class="btn-cancel" @click="handleCancelEditInvitation" style="flex: 1; background-color: #ffffff; color: #194e9e; border: 1.5px solid #194e9e; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; text-align: center; font-family: var(--font-sans);">Batal</button>
         <button class="btn-save" @click="handleSaveInvitation" style="flex: 1.2; background-color: #194e9e; color: #ffffff; border: 1.5px solid #194e9e; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; white-space: nowrap; text-align: center; font-family: var(--font-sans);">Simpan Perubahan</button>
       </div>
@@ -1556,7 +1556,7 @@ const handleChat = () => {
 .detail-content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 40px;
+  padding-bottom: 16px;
 }
 
 /* Banner container */
@@ -2265,24 +2265,39 @@ const handleChat = () => {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  position: absolute;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
-  background-color: #ffffff;
-  border-top: 1px solid #f1f5f9;
-  padding: 8px 16px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+  background-color: #f8fafc;
+  border-top: none;
+  padding: 12px 16px;
+  box-shadow: none;
 }
 
 /* Transition for slide up */
-.slide-up-enter-active, .slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.slide-up-enter-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 }
-.slide-up-enter-from, .slide-up-leave-to {
-  transform: translateY(100%);
+.slide-up-leave-active {
+  transition: transform 0.2s cubic-bezier(0.7, 0, 0.84, 0), opacity 0.15s ease;
+}
+.slide-up-enter-from {
+  transform: translateY(16px);
   opacity: 0;
+}
+.slide-up-leave-to {
+  transform: translateY(16px);
+  opacity: 0;
+}
+
+.btn-save-full {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-save-full:active {
+  transform: scale(0.98);
 }
 
 /* Invitation & Penjualan tab content styles */
